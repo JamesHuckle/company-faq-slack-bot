@@ -289,7 +289,7 @@ def process_new_article(title: str, heading: str, content: str) -> bool:
         'content': content,
         'tokens': len(EMBEDDING_ENCODING.encode(str_content)),
     }
-    df_new = pd.DataFrame([new_faq_data], index=[new_faq_index])
+    df_new = pd.DataFrame([new_faq_data]).set_index(DATA_FILE_INDEX)
 
     new_article_embedding = get_embedding(content)
 
