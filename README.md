@@ -1,58 +1,38 @@
-# chatgpt-faq-slack-bot
+# company-faq-slack-bot
 
-![](https://img.shields.io/badge/Python-3776AB.svg?&logo=Python&logoColor=white)
+![img](https://img.shields.io/badge/Python-3776AB.svg?&logo=Python&logoColor=white)
 ![](https://img.shields.io/badge/Serverless-FD5750.svg?&logo=Serverless&logoColor=white)
 ![](https://img.shields.io/badge/AWS%20Lambda-FF9900.svg?&logo=AWS-Lambda&logoColor=white)
 ![](https://img.shields.io/badge/Amazon%20S3-569A31.svg?&logo=Amazon-S3&logoColor=white)
 ![](https://img.shields.io/badge/OpenAI-412991.svg?&logo=OpenAI&logoColor=white)
 ![](https://img.shields.io/badge/Slack-4A154B.svg?&logo=Slack&logoColor=white)
 
-The bot uses ChatGPT to answer based on your own FAQ database, while allowing users to submit new articles into it with a [Slash Command](https://slack.com/help/articles/201259356-Slash-commands-in-Slack), so that it can answer with new knowledge **immediately**, as it updates the model **on the fly in the cloud**!
+The Slack bot does two things:
 
-Read my [dev.to](https://dev.to) article below to know more about why and how I created this solution!
+- Acts as a glossary bot, using NLP techniques to match acroymys or buzzwords used in a chat and returns with a fuller description.
+- With **/gennai** it can answer questions from a created FAQ database using gpt4-o.
 
-I have also included a pricing estimate on the cost breakdown of using this solution (it's at US$0.009 per question as of Apr 2023 pricings).
+It allows users to submit new articles and glossary terms into it with a [Slash Command](https://slack.com/help/articles/201259356-Slash-commands-in-Slack), so that it can answer with newly added knowledge **immediately**, as it updates the model **on the fly in the cloud**!
 
-https://dev.to/aws-builders/enhance-your-slack-workspace-with-a-user-trainable-chatgpt-integrated-faq-bot-2pj3
+## Example Use
 
-## Example
+#### Glossary Bot
 
-A sample dataset is included in the `./sample_data` directory, and it's built based on Wikipedia pages on the Disney+ series "The Mandalorian".
+Automatically replies with clarity on any acroymys or buzzwords someone has said in the chat, based on a created glossary.![1720294315859](docs\glossary-bot.png)
 
-So it does know who is Grogu:
-![Who is Grogu](docs/who-is-grogu.png)
+Use **/gennyai-glossary** in slack to add terms to the glossary. Use adavnced options to view/download/delete terms from csv Database.
 
-But doesn't know who I am:
-![Who is Gabriel Koo](docs/who-is-gabriel-koo.png)
+![1720294553694](docs\glossary-add.png)
 
-So I can submit a new article to the bot:
-![Submit a new article](docs/submit-new-article.png)
+#### FAQ answering
 
-And now the bot knows how to answer my question:
-![Who is Gabriel Koo](docs/answer-with-new-article.png)
+Just type in **\gennai What is RAG?** in slack. Use adavnced options to view/download/delete FAQs from csv Database.
 
-## Background
+![1720295024561](docs\FAQ.png)
 
-Since ChatGPT's API became available in 2023 Mar, the world has been of great hype on building a lot of great integrations around it. Two of these integrations are especially appealing to me:
+Update the knowledge based with short articles with **/gennyai-train**. 
 
-1. [Combing Embedding Search with ChatGPT](https://github.com/openai/openai-cookbook/blob/main/examples/Question_answering_using_embeddings.ipynb) to build a FAQ engine - it's a way of:
-[Knowledge Base Question Answering (KBQA)](https://arxiv.org/pdf/2108.06688.pdf) - combining
-
-   - natural language understanding (via a text embedding on the question)
-   - information retrieval (via a text embedding on the articles, matches  against the one for the question)
-   - knowledge representation (via ChatGPT with the selected information)
-
-2. Connecting the AI with a programmable messaging platform like Slack
-
-But so far, I have not seen any open-source project that:
-
-1. combines the two together
-2. provides a easy hosting method like AWS SAM, and lastly
-3. provides a functionality to **let the user submit extra knowledge into the embedding dataset**.
-
-The **3rd** point is very important to me, because in this post-OpenAI era, you should no longer rely on an expensive data scientist to build a FAQ engine for you. Instead, you should let your users submit their own knowledge into the dataset, so that the AI can learn from the collective intelligence of your users.
-
-So I decided to build one myself.
+![1720295165326](docs\train-genny.png)
 
 ## Architecture and Infrastructure
 
@@ -148,7 +128,7 @@ The following event subscriptions are required:
 - `message.mpim`
 
 Enable "Allow users to send commands and messages from the messages tab” in the “App Home” settings.
-![Enable "Allow users to send commands and messages from the messages tab” in the “App Home” settings](docs/slack-allow-user-messages.png)
+![Enable ](docs/slack-allow-user-messages.png)
 
 Lastly, make sure to install the app to your workspace
 ![Install the app to your workspace](docs/slack-create-new-app.png)
@@ -162,8 +142,9 @@ Prepare the following environment varaibles into the `.env` file
 
 1. Setup your shell for AWS credentials. There are various ways of doing so, and you may refer to [this documnetation](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html).
 
-   For example, you may run `aws sso login --profile name-of-your-profile` if you have configured your AWS credentials with AWS Identity Center (originally named AWS SSO) before.
-2. Run the `./deploy.sh` script, it will provision everything for you.
+   For example, you may run `aws sso login --profile AWSAdministratorAccess-164768572570` if you have configured your AWS credentials with AWS Identity Center (originally named AWS SSO) before.
+2. Copy your credentials locally `eval "$(aws configure export-credentials --profile AWSAdministratorAccess-164768572570 --format env)"`
+3. Run the `./deploy.sh` script, it will provision everything for you.
 
 After the deployment, you still need to manually upload the initial datafiles.
 
@@ -171,24 +152,27 @@ After the deployment, you still need to manually upload the initial datafiles.
 
 - Prepare a file in `.data/articles.csv`, with three columns `(title, heading, content)`.
 
-   ```bash
-   #!/bin/bash
-   cd function
-   export LOCAL_DATA_PATH=./
-   python3 -c 'from embedding import *; prepare_document_embeddings()'
-   ```
+  ```bash
+  #!/bin/bash
+  cd function
+  export LOCAL_DATA_PATH=./
+  python3 -c 'from embedding import *; prepare_document_embeddings()'
+  ```
 
-   Be sure to escape e.g. newline characters into `\n` in the `column` field.
+  Be sure to escape e.g. newline characters into `\n` in the `column` field.
 
-   Then, a file should be created at `./data/document_embeddings.csv`.
+  Then, a file should be created at `./data/document_embeddings.csv`.
 - Upload both files onto the S3 bucket that was created by the CloudFormation template, at the following paths:
+
+  `s3://chatgpt-faq-slack-bot-data-autogenai/data/`
+
   - `s3://$DATAFILE_S3_BUCKET/data/articles.csv`
   - `s3://$DATAFILE_S3_BUCKET/data/document_embeddings.csv`
 
   If you want to use the command line, you can run the following command:
 
   ```bash
-  aws s3 cp --recursive ./function/data/*.csv s3://$DATAFILE_S3_BUCKET/data/
+  aws s3 cp --recursive ./function/data/ s3://$DATAFILE_S3_BUCKET/data/
   ```
 
 That's it!
@@ -196,7 +180,7 @@ That's it!
 If you want to be a bit lazy and start with my sample data, just run the following command instead
 
 ```bash
-aws s3 cp --recursive ./sample_data/*.csv s3://$DATAFILE_S3_BUCKET/data/
+aws s3 cp --recursive ./sample_data/ s3://$DATAFILE_S3_BUCKET/data/
 ```
 
 ## Making Everything End-to-End
@@ -221,18 +205,14 @@ In addition you can also create a `/submit_train_article` slack command so that 
 
 ## TODO
 
-- [ ] Use AWS System Manager Parameter Store instead of plaintext Lambda environment variables - [Tutorial Here](https://docs.aws.amazon.com/systems-manager/latest/userguide/ps-integration-lambda-extensions.html)
-- [ ] Use API Gateway instead of Lambda function Urls - [AWS SAM Example](https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway-template.html)
-- [ ] Add a WAF to the API Gateway - [Documentation](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-control-access-aws-waf.html)
-- [ ] Put the whole setup into an AWS VPC - [Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html#:~:text=Lambda%3A%3AVersion%20resource.-,VpcConfig,-The%20configuration%20that)
-- [ ] Switch to AWS EFS for the datafiles - [Documentation](https://aws.amazon.com/blogs/compute/using-amazon-efs-for-aws-lambda-in-your-serverless-applications/)
-- [ ] Preserve user's message context with DynamoDB - [Documentation](https://docs.aws.amazon.com/lambda/latest/dg/kinesis-tutorial-spec.html)
+- [ ]
 
 ## Thanks
 
 This project is based on the following projects:
 
-- [openai/openai-cookbook - "Embedding Wikipedia articles for search"](https://github.com/openai/openai-cookbook/blob/d67c4181abe9dfd871d382930bb778b7014edc66/examples/Embedding_Wikipedia_articles_for_search.ipynb)
-- [openai/openai-cookbook - "Question answering using embeddings-based search"](https://github.com/openai/openai-cookbook/blob/main/examples/Question_answering_using_embeddings.ipynb)
+- [gabrielkoo/chatgpt-faq-slack-bot](https://github.com/gabrielkoo/chatgpt-faq-slack-bot)
+- [openai/openai-cookbook - &#34;&#34;Embedding Wikipedia articles for search&#34;&#34;](https://github.com/openai/openai-cookbook/blob/d67c4181abe9dfd871d382930bb778b7014edc66/examples/Embedding_Wikipedia_articles_for_search.ipynb)
+- [openai/openai-cookbook - &#34;Question answering using embeddings-based search&#34;](https://github.com/openai/openai-cookbook/blob/main/examples/Question_answering_using_embeddings.ipynb)
 - [Slack Bolt Examples - AWS Lambda](https://github.com/slackapi/bolt-python/blob/main/examples/aws_lambda/aws_lambda.py)
 - [OpenAI - Introducing text and code embeddings](https://openai.com/blog/introducing-text-and-code-embeddings)
