@@ -18,21 +18,21 @@ It allows users to submit new articles and glossary terms into it with a [Slash 
 
 #### Glossary Bot
 
-Automatically replies with clarity on any acroymys or buzzwords someone has said in the chat, based on a created glossary.![1720294315859](docs\glossary-bot.png)
+Automatically replies with clarity on any acroymys or buzzwords someone has said in the chat, based on a created glossary.![1720294315859](docs/glossary-bot.png)
 
 Use **/gennyai-glossary** in slack to add terms to the glossary. Use adavnced options to view/download/delete terms from csv Database.
 
-![1720294553694](docs\glossary-add.png)
+![1720294553694](docs/glossary-add.png)
 
 #### FAQ answering
 
 Just type in **\gennai What is RAG?** in slack. Use adavnced options to view/download/delete FAQs from csv Database.
 
-![1720295024561](docs\FAQ.png)
+![1720295024561](docs/FAQ.png)
 
 Update the knowledge based with short articles with **/gennyai-train**. 
 
-![1720295165326](docs\train-genny.png)
+![1720295165326](docs/train-genny.png)
 
 ## Architecture and Infrastructure
 
