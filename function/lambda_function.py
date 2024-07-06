@@ -135,7 +135,6 @@ def extract_valid_json(string:str) -> dict:
 @app.event('message')
 def handle_message_events(body, say, ack):
     print("Received message event")
-    ack()
         
     event = body['event']
     message = event['text']
@@ -536,7 +535,7 @@ def handle_article_deletion(ack, body, client):
     else:
         send_message_to_user(
             body['user']['id'],
-            f'Something went wrong deleting glossary terms!',
+            'Something went wrong deleting glossary terms!',
         )
         print('Something went wrong deleting glossary terms!')
 
@@ -551,12 +550,12 @@ def lambda_handler(event, context):
     # Ref: https://api.slack.com/apis/connections/events-api#retries
 
     print('made it to lambda_handler')
-    # if event['headers'].get('x-slack-retry-num'):
-    #     print('Retry attempt detected. Skipping processing.')
-    #     return {
-    #         'statusCode': 200,
-    #         'body': 'ok',
-    #     }
+    if event['headers'].get('x-slack-retry-num'):
+        print('Retry attempt detected. Skipping processing.')
+        return {
+            'statusCode': 200,
+            'body': 'ok',
+        }
 
     # For debugging
     print(json.dumps(event))
