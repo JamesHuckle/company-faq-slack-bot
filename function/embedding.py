@@ -270,7 +270,7 @@ def construct_prompt(question: str, context_embeddings: dict, df: pd.DataFrame) 
     header = (
         'Answer the question as truthfully as possible using the provided context, ' +
         'and if the answer is not contained within the text below, ' +
-        'say "\'I don\'t have the answer to that, consider adding useful information with /gennyai-add".\n' +
+        'say "\'I don\'t have the answer to that, consider adding useful information with /gennyai-train".\n' +
         'Context:\n'
     )
 
