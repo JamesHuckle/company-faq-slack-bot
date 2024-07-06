@@ -2,7 +2,7 @@ import os
 
 import openai
 
-COMPLETIONS_MODEL = os.environ.get('COMPLETIONS_MODEL', 'gpt-3.5-turbo')
+COMPLETIONS_MODEL = os.environ.get('COMPLETIONS_MODEL', 'gpt-4o')
 COMPLETION_MAX_TOKENS = 1024
 COMPLETIONS_API_PARAMS = {
     'temperature': 0.0,

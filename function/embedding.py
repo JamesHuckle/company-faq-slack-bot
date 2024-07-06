@@ -16,6 +16,7 @@ DATA_BUCKET = os.environ['DATAFILE_S3_BUCKET']
 LOCAL_DATA_PATH = os.environ.get('LOCAL_DATA_PATH', '/tmp/')
 DATA_FILE_PATH = 'data/articles.csv'
 EMBEDDINGS_FILE_PATH = 'data/document_embeddings.csv'
+GLOSSARY_FILE_PATH = 'data/glossary.csv'
 
 # ===== Embedding Related =====
 EMBEDDING_MODEL = os.environ.get('EMBEDDING_MODEL', 'text-embedding-ada-002')
@@ -25,6 +26,7 @@ EMBEDDING_ENCODING = tiktoken.encoding_for_model(EMBEDDING_MODEL)
 separator_len = len(EMBEDDING_ENCODING.encode(SEPARATOR))
 
 DATA_FILE_INDEX = ['title', 'heading']
+GLOSSARY_FILE_INDEX = ['term', 'meaning']
 
 # It's a hacky way to perserve a 'Global variable' so that loading of data
 # is only done once per Lambda container.
@@ -33,27 +35,53 @@ active_data = {}
 
 print('Start processing functions')
 
+def create_presigned_url(bucket_name, object_name, expiration=3600):
+    """
+    :param expiration: Time in seconds for the presigned URL to remain valid
+    :return: Presigned URL as string. If error, returns None.
+    """
+    # Create a S3 client
+    s3_client = boto3.client('s3')
+    try:
+        response = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket_name,'Key': object_name},
+            ExpiresIn=expiration
+        )
+    except Exception as e:
+        print('Error in generating presigned URL: ', e)
+        return None
+    return response
+
 
 def get_data_bucket():
     s3 = boto3.resource('s3', region_name=os.environ['AWS_REGION'])
     return s3.Bucket(DATA_BUCKET)  # type: ignore
 
+def get_datafile_presigned_url():
+    s3_path = f's3://{DATA_BUCKET}/{DATA_FILE_PATH}'
+    return s3_path, create_presigned_url(DATA_BUCKET, DATA_FILE_PATH)
 
-def download_data():
+def get_glossary_presigned_url():
+    s3_path = f's3://{DATA_BUCKET}/{GLOSSARY_FILE_PATH}'
+    return s3_path, create_presigned_url(DATA_BUCKET, GLOSSARY_FILE_PATH)
+
+
+def download_data(file_paths: list[str]):
     """
     Download the data files from S3 if they don't exist locally.
     Note that this function should only be called when necessary to save unnecessary API calls.
     """
     if not os.path.exists(LOCAL_DATA_PATH + 'data'):
         os.makedirs(LOCAL_DATA_PATH + 'data')
-
-    for relative_file_path in [DATA_FILE_PATH, EMBEDDINGS_FILE_PATH]:
+    
+    data_bucket = get_data_bucket()
+    for relative_file_path in file_paths:
         full_path = LOCAL_DATA_PATH + relative_file_path
         try:
             with open(full_path, 'r') as f:
                 pass
         except FileNotFoundError:
-            data_bucket = get_data_bucket()
             data_bucket.download_file(relative_file_path, full_path)
             print(f'Downloaded {relative_file_path} from S3 to {full_path}.')
 
@@ -61,8 +89,7 @@ def download_data():
 def load_datafile(fname: str) -> pd.DataFrame:
     # check if fname file exists, if not, call `download_data()`
     if not os.path.exists(fname):
-        download_data()
-
+        download_data([DATA_FILE_PATH])
     df = pd.read_csv(fname, header=0)
     df = df.set_index(DATA_FILE_INDEX)
     return df
@@ -76,14 +103,21 @@ def load_embeddings(fname: str) -> dict[tuple[str, str], list[float]]:
         'title', 'heading', '0', '1', ... up to the length of the embedding vectors.
     """
     if not os.path.exists(fname):
-        download_data()
-
+        download_data([EMBEDDINGS_FILE_PATH])
     df = pd.read_csv(fname, header=0)
     df = df.set_axis(DATA_FILE_INDEX + list(df.columns[2:]), axis=1)
     max_dim = max([int(c) for c in df.columns if c != 'title' and c != 'heading'])
     return {
            (r.title, r.heading): [r[str(i)] for i in range(max_dim + 1)] for _, r in df.iterrows()
     }
+
+def load_glossary(fname: str) -> pd.DataFrame:
+    # check if fname file exists, if not, call `download_data()`
+    if not os.path.exists(fname):
+        download_data([GLOSSARY_FILE_PATH])
+    df = pd.read_csv(fname, header=0)
+    df = df.set_index(GLOSSARY_FILE_INDEX)
+    return df
 
 
 def get_data():
@@ -96,6 +130,12 @@ def get_document_embeddings():
     if active_data.get('document_embeddings') is None:
         active_data['document_embeddings'] = load_embeddings(LOCAL_DATA_PATH + EMBEDDINGS_FILE_PATH)
     return active_data['document_embeddings']
+
+
+def get_glossary():
+    if active_data.get('glossary') is None:
+        active_data['glossary'] = load_glossary(LOCAL_DATA_PATH + GLOSSARY_FILE_PATH)
+    return active_data['glossary']
 
 
 def get_embedding(text: str, model: str=EMBEDDING_MODEL) -> list[float]:
@@ -230,7 +270,7 @@ def construct_prompt(question: str, context_embeddings: dict, df: pd.DataFrame) 
     header = (
         'Answer the question as truthfully as possible using the provided context, ' +
         'and if the answer is not contained within the text below, ' +
-        'say \'I don\'t know as I am configured to answer based on my training data.\n' +
+        'say "\'I don\'t have the answer to that, consider adding useful information with /gennyai-add".\n' +
         'Context:\n'
     )
 
@@ -273,6 +313,82 @@ def process_new_article(title: str, heading: str, content: str) -> bool:
     active_data['df'] = df
     active_data['document_embeddings'] = document_embeddings
 
-    print(f'Re-uploaded data file onto S3 for {new_faq_index}.')
+    print(f'Re-uploaded data file onto S3.')
+    return True
 
+
+def delete_article(title_and_header: list[tuple]) -> bool:
+    df = get_data()
+    document_embeddings = get_document_embeddings()
+
+    for (title, heading) in title_and_header:
+        new_faq_index = (title, heading)
+        # check if the index already exists
+        if new_faq_index not in df.index:
+            print(f'FAQ cannot be found: {new_faq_index}')
+            return False
+        df.drop(index=new_faq_index, inplace=True)
+        del document_embeddings[(title, heading)]
+        print(f'Deleted article for {new_faq_index}')
+
+    df.to_csv(LOCAL_DATA_PATH + DATA_FILE_PATH, index_label=DATA_FILE_INDEX)
+    pd.DataFrame(document_embeddings).T.to_csv(LOCAL_DATA_PATH + EMBEDDINGS_FILE_PATH, index_label=DATA_FILE_INDEX)
+
+    # upload back the datafiles to S3
+    data_bucket = get_data_bucket()
+    for file in [DATA_FILE_PATH, EMBEDDINGS_FILE_PATH]:
+        _response = data_bucket.upload_file(LOCAL_DATA_PATH + file, file)
+
+    # update the active data in global variable
+    active_data['df'] = df
+    active_data['document_embeddings'] = document_embeddings
+
+    print(f'Re-uploaded data file onto S3.')
+    return True
+
+
+def process_new_glossary(terms_meanings: list[tuple]) -> bool:
+    df = get_glossary()
+
+    df_new = pd.DataFrame(terms_meanings, columns=GLOSSARY_FILE_INDEX)
+    df_new = df_new.set_index(GLOSSARY_FILE_INDEX)
+    df = pd.concat([df, df_new])
+    
+    print(f'Processed new glossary terms for {terms_meanings}')
+
+    df.to_csv(LOCAL_DATA_PATH + GLOSSARY_FILE_PATH, index_label=GLOSSARY_FILE_INDEX)
+
+    # upload back the datafiles to S3
+    data_bucket = get_data_bucket()
+    _response = data_bucket.upload_file(LOCAL_DATA_PATH + GLOSSARY_FILE_PATH, GLOSSARY_FILE_PATH)
+
+    # update the active data in global variable
+    active_data['glossary'] = df
+
+    print(f'Re-uploaded glossary file onto S3.')
+    return True
+
+
+def delete_glossary(term_and_meanings: list[tuple]) -> bool:
+    df = get_glossary()
+
+    for (term, meaning) in term_and_meanings:
+        new_glossary_index = (term, meaning)
+        # check if the index already exists
+        if new_glossary_index not in df.index:
+            print(f'Glossary term cannot be found: {new_glossary_index}')
+            return False
+        df.drop(index=new_glossary_index, inplace=True)
+        print(f'Deleted glossary for {new_glossary_index}')
+
+    df.to_csv(LOCAL_DATA_PATH + GLOSSARY_FILE_PATH, index_label=GLOSSARY_FILE_INDEX)
+    
+    # upload back the datafiles to S3
+    data_bucket = get_data_bucket()
+    _response = data_bucket.upload_file(LOCAL_DATA_PATH + GLOSSARY_FILE_PATH, GLOSSARY_FILE_PATH)
+
+    # update the active data in global variable
+    active_data['glossary'] = df
+
+    print(f'Re-uploaded glossary file onto S3.')
     return True
