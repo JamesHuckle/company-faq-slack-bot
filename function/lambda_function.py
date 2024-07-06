@@ -185,7 +185,7 @@ def handle_gennyai_command(ack, body, say):
         reply_text = get_completion(prompt_with_articles_as_context + '. Respond in 40 words or less')
         say(reply_text)
     except Exception as e:
-        print('Error getting result {e}')
+        print(f'Error getting result {e}')
 
 
 @app.command('/gennyai-train')
