@@ -2,5 +2,5 @@ openai==0.27.8
 pandas
 slack_bolt==1.18.0
 slack_sdk
-tiktoken==0.4.0
+tiktoken==0.7.0
 urllib3<2
