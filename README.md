@@ -10,7 +10,7 @@
 The Slack Bot does two things:
 
 - Acts as a glossary bot, using NLP techniques to match acroymys or buzzwords used in a chat and returns with a fuller description.
-- With **/gennai** it can answer questions from a created FAQ database using gpt4-o.
+- With **/genny** it can answer questions from a created FAQ database using gpt4-o.
 
 It allows users to submit new articles and glossary terms into it with a [Slash Command](https://slack.com/help/articles/201259356-Slash-commands-in-Slack), so that it can answer with newly added knowledge **immediately**, as it updates the model **on the fly in the cloud**!
 
@@ -20,17 +20,17 @@ It allows users to submit new articles and glossary terms into it with a [Slash 
 
 Automatically replies with clarity on any acroymys or buzzwords someone has said in the chat, based on a created glossary.![1720294315859](docs/glossary-bot.png)
 
-Use **/gennyai-glossary** in slack to add terms to the glossary. Use adavnced options to view/download/delete terms from csv Database.
+Use **/genny-glossary** in slack to add terms to the glossary. Use adavnced options to view/download/delete terms from csv Database.
 
 ![1720294553694](docs/glossary-add.png)
 
 #### FAQ answering
 
-Just type in **\gennai What is RAG?** in slack. Use adavnced options to view/download/delete FAQs from csv Database.
+Just type in **\genny What is RAG?** in slack. Use adavnced options to view/download/delete FAQs from csv Database.
 
 ![1720295024561](docs/FAQ.png)
 
-Update the knowledge based with short articles with **/gennyai-train**. 
+Update the knowledge based with short articles with **/gennyai-faq**.
 
 ![1720295165326](docs/train-genny.png)
 

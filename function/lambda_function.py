@@ -164,10 +164,10 @@ def handle_message_events(body, say, ack):
         say(f"Please mind the following terms stand for:\n{str_output}")
     
     
-@app.command("/gennyai")
+@app.command("/genny")
 def handle_gennyai_command(ack, body, say):
     ack()
-    print('Recieved /gennyai command')
+    print('Recieved /genny command')
 
     message = body['text']
     print(f'User said `{message}`.')
@@ -188,17 +188,17 @@ def handle_gennyai_command(ack, body, say):
         print(f'Error getting result {e}')
 
 
-@app.command('/gennyai-train')
+@app.command('/genny-faq')
 def handle_submit_train_article_command(ack, respond, command):
     ack()
-    print('Received /gennyai-train command')
+    print('Received /genny-faq command')
     try:
         _response = app.client.views_open(
             trigger_id=command['trigger_id'],
             view={
                 'type': 'modal',
-                'callback_id': 'gennyai-train_view',
-                'title': {'type': 'plain_text', 'text': 'Feed new article to Bot'},
+                'callback_id': 'gennyai-faq_view',
+                'title': {'type': 'plain_text', 'text': "Add new FAQ"},
                 'blocks': [
                     {
                         'type': 'input',
@@ -237,7 +237,7 @@ def handle_submit_train_article_command(ack, respond, command):
         print('Error opening modal: {}'.format(e))
 
 
-@app.view('gennyai-train_view')
+@app.view('gennyai-faq_view')
 def handle_new_train_article_submission(ack, body):
     ack()
     values = body['view']['state']['values']
@@ -364,16 +364,16 @@ def handle_article_deletion(ack, body, client):
         print('Something went wrong deleting articles!')
 
 
-@app.command('/gennyai-glossary')
+@app.command('/genny-glossary')
 def handle_submit_glossary_command(ack, respond, command):
     ack()
-    print('Received /gennyai-glossary command')
+    print('Received /genny-glossary command')
     try:
         _response = app.client.views_open(
             trigger_id=command['trigger_id'],
             view={
                 'type': 'modal',
-                'callback_id': 'gennyai-glossary_view',
+                'callback_id': 'genny-glossary_view',
                 'title': {'type': 'plain_text', 'text': 'Add new Glossary terms'},
                 'blocks': [
                     {
@@ -411,7 +411,7 @@ def handle_submit_glossary_command(ack, respond, command):
         print('Error opening modal: {}'.format(e))
 
 
-@app.view('gennyai-glossary_view')
+@app.view('genny-glossary_view')
 def handle_new_glossary_submission(ack, body):
     ack()
     values = body['view']['state']['values']
