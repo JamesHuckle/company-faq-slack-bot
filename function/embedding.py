@@ -123,6 +123,7 @@ def load_glossary(fname: str) -> pd.DataFrame:
 def get_data():
     if active_data.get('df') is None:
         active_data['df'] = load_datafile(LOCAL_DATA_PATH + DATA_FILE_PATH)
+    print('get data:', active_data['df'])
     return active_data['df']
 
 
@@ -283,6 +284,8 @@ def process_new_article(title: str, heading: str, content: str) -> bool:
 
     str_content = f"Title:{title} Heading:{heading} Content:{content}"
     new_faq_data = {
+        'title': title,
+        'heading': heading,
         'content': content,
         'tokens': len(EMBEDDING_ENCODING.encode(str_content)),
     }
@@ -320,7 +323,7 @@ def delete_article(title_and_header: list[tuple]) -> bool:
         # check if the index already exists
         if new_faq_index not in df.index:
             print(f'FAQ cannot be found: {new_faq_index}')
-            return False
+            continue
         df.drop(index=new_faq_index, inplace=True)
         del document_embeddings[(title, heading)]
         print(f'Deleted article for {new_faq_index}')
