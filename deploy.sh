@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Set secrets in your `.env` file into this shell session
+. ./.env
 export PYTHON_RUNTIME=${PYTHON_RUNTIME:-python3.9}
 
 # Check if AWS Creentials and Region have been set
@@ -19,14 +21,10 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Set secrets in your `.env` file into this shell session
-. ./.env
-
 # Build the Lambda Layer by installing the dependencies with the build image
 sam build \
     --use-container \
     --template template.yml \
-    --build-image "amazon/aws-sam-cli-build-image-$PYTHON_RUNTIME"
 
 # Change `--stack-name` to your own stack name if needed
 sam deploy \
