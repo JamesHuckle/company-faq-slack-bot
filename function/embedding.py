@@ -91,6 +91,7 @@ def load_datafile(fname: str) -> pd.DataFrame:
     if not os.path.exists(fname):
         download_data([DATA_FILE_PATH])
     df = pd.read_csv(fname, header=0)
+    df = df.dropna(subset=['content'])
     df = df.set_index(DATA_FILE_INDEX)
     return df
 
