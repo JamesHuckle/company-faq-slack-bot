@@ -7,7 +7,7 @@
 ![](https://img.shields.io/badge/OpenAI-412991.svg?&logo=OpenAI&logoColor=white)
 ![](https://img.shields.io/badge/Slack-4A154B.svg?&logo=Slack&logoColor=white)
 
-The Slack bot does two things:
+The Slack Bot does two things:
 
 - Acts as a glossary bot, using NLP techniques to match acroymys or buzzwords used in a chat and returns with a fuller description.
 - With **/gennai** it can answer questions from a created FAQ database using gpt4-o.
