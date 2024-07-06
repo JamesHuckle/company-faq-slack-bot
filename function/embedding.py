@@ -149,9 +149,7 @@ def get_embedding(text: str, model: str=EMBEDDING_MODEL) -> list[float]:
 def compute_datafile_tokens(df: pd.DataFrame) -> pd.DataFrame:
     '''
     Compute the number of tokens in each row of the dataframe.
-
     The dataframe should have the indices 'title' and 'heading', and a column named 'content'.
-
     Return the dataframe with an additional column named 'tokens'.
     '''
 
@@ -162,16 +160,14 @@ def compute_datafile_tokens(df: pd.DataFrame) -> pd.DataFrame:
 def compute_doc_embeddings(df: pd.DataFrame) -> dict[tuple[str, str], list[float]]:
     '''
     Create an embedding for each row in the dataframe using the OpenAI Embeddings API.
-
     The dataframe should have the indices 'title' and 'heading', and a column named 'content'.
-
     Return a dictionary that maps between each embedding vector and the index of the row that it corresponds to.
-
     A waiting time of 3 seconds is added between each API call to avoid rate limiting.
     '''
     emb = {}
     for idx, r in df.iterrows():
-        emb[idx] = get_embedding(r.content)
+        str_content = f"Title:{r.title} Heading:{r.heading} Content:{r.content}"
+        emb[idx] = get_embedding(str_content)
         time.sleep(3)
         print(f"Processed '{idx}' document for embedding")
     return emb
@@ -255,26 +251,23 @@ def construct_prompt(question: str, context_embeddings: dict, df: pd.DataFrame) 
 
     for _, section_index in most_relevant_document_sections:
         # Add contexts until we run out of space.
-        document_section = df.loc[section_index]
-
+        document_section = df.loc[section_index]      
         chosen_sections_len += document_section.tokens + separator_len  # type: ignore
         if chosen_sections_len > MAX_SECTION_LEN:
             break
-
-        chosen_sections.append(SEPARATOR + document_section.content)  # type: ignore
+        str_content = f"Title:{section_index[0]} Heading:{section_index[1]} Content:{document_section.content}"        
+        chosen_sections.append(SEPARATOR + str_content)  # type: ignore
         chosen_sections_indexes.append(str(section_index))
 
     # Useful diagnostic information
     print(f'Selected {len(chosen_sections)} document sections: [', ', '.join(chosen_sections_indexes), ']')
 
-    header = (
-        'Answer the question as truthfully as possible using the provided context, ' +
-        'and if the answer is not contained within the text below, ' +
-        'say "\'I don\'t have the answer to that, consider adding useful information with /gennyai-train".\n' +
-        'Context:\n'
-    )
+    instruction_prompt = """INSTRUCTIONS:
+Answer the question as truthfully as possible using the provided context.
+If the answer is not contained within the CONTEXT above say: "I don't have the answer to that. Consider adding useful information with /gennyai-train".
+"""
 
-    return header + ''.join(chosen_sections) + SEPARATOR +'\n\n Q: ' + question + '\n A:'
+    return f'CONTEXT:\n{"".join(chosen_sections)}\n\n{instruction_prompt}\n\nQUESTION:{question}\n\nANSWER:'
 
 
 def process_new_article(title: str, heading: str, content: str) -> bool:
@@ -288,9 +281,10 @@ def process_new_article(title: str, heading: str, content: str) -> bool:
         print(f'FAQ already exists: {new_faq_index}')
         return False
 
+    str_content = f"Title:{title} Heading:{heading} Content:{content}"
     new_faq_data = {
         'content': content,
-        'tokens': len(EMBEDDING_ENCODING.encode(content)),
+        'tokens': len(EMBEDDING_ENCODING.encode(str_content)),
     }
     df_new = pd.DataFrame([new_faq_data], index=[new_faq_index])
 

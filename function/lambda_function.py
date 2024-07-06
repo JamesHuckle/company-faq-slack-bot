@@ -277,7 +277,7 @@ def handle_delete_article_button_click(ack, body, client):
     data = get_data()
     print('data', data)
     s3_path, datafile_url = get_datafile_presigned_url()
-    articles = data.reset_index().to_dict('records')
+    articles = data.reset_index().to_dict('records').copy()
     print(f'articles: {articles}')
     article_options = [{
         'text': {
