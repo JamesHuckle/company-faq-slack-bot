@@ -18,7 +18,9 @@ It allows users to submit new articles and glossary terms into it with a [Slash 
 
 #### Glossary Bot
 
-Automatically replies with clarity on any acroymys or buzzwords someone has said in the chat, based on a created glossary.![1720294315859](docs/glossary-bot.png)
+Automatically replies with clarity on any acroymys or buzzwords someone has said in the chat, based on a created glossary.
+
+![1720294315859](docs/glossary-bot.png)
 
 Use **/genny-glossary** in slack to add terms to the glossary. Use adavnced options to view/download/delete terms from csv Database.
 
