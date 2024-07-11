@@ -138,6 +138,7 @@ def handle_message_events(body, say, ack):
         
     event = body['event']
     message = event['text']
+    thread_ts = event.get('thread_ts') or event['ts']
     
     # Only importing here to optimize Lambda start up time
     from embedding import get_glossary
@@ -150,7 +151,7 @@ def handle_message_events(body, say, ack):
 
     glossary_terms_in_message = {}
     for term in glossary_terms:
-        pattern = r'\b' + re.escape(term) + r'\b'
+        pattern = r'(?<![\w-])' + re.escape(term) + r'(?![\w-])'
         match = re.search(pattern, message)
         if match:
             glossary_terms_in_message[term] = glossary_dict[term]
@@ -161,7 +162,8 @@ def handle_message_events(body, say, ack):
     else:
         str_output = '\n'.join([f"• *{term}* => _{meaning}_" 
                                 for term, meaning in glossary_terms_in_message.items()])
-        say(f"Please mind the following terms stand for:\n{str_output}")
+        say(f"Please mind the following terms stand for:\n{str_output}", thread_ts=thread_ts)
+        ack()
     
     
 @app.command("/genny")
