@@ -138,7 +138,7 @@ def handle_message_events(body, say, ack):
         
     event = body['event']
     message = event['text']
-    thread_ts = event.get('thread_ts') or event['ts']
+    thread_ts = event.get('thread_ts') or event.get('ts')
     
     # Only importing here to optimize Lambda start up time
     from embedding import get_glossary
@@ -172,10 +172,13 @@ def handle_gennyai_command(ack, body, say):
     print('Recieved /genny command')
 
     message = body['text']
-    event = body['event']
-    thread_ts = event.get('thread_ts') or event['ts']
+    print('body:', body)
     print(f'User said `{message}`.')
-    say(f'Question: {message}')
+    response = app.client.chat_postMessage(
+        channel=body['channel_id'],
+        text=f'Question: {message}'
+    )
+    thread_ts = response['ts']
     
     try:
         # Only importing here to optimize Lambda start up time

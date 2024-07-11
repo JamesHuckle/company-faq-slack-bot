@@ -266,7 +266,7 @@ def construct_prompt(question: str, context_embeddings: dict, df: pd.DataFrame) 
 
     instruction_prompt = """INSTRUCTIONS:
 Answer the question as truthfully as possible using the provided context.
-If the answer is not contained within the CONTEXT above say: "I don't have the answer to that. Consider adding useful information with /gennyai-train".
+If the answer is not contained within the CONTEXT above say: "I don't have the answer to that. Consider adding useful information with /gennyai-faq".
 """
 
     return f'CONTEXT:\n{"".join(chosen_sections)}\n\n{instruction_prompt}\n\nQUESTION:{question}\n\nANSWER:'
