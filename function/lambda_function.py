@@ -172,6 +172,8 @@ def handle_gennyai_command(ack, body, say):
     print('Recieved /genny command')
 
     message = body['text']
+    event = body['event']
+    thread_ts = event.get('thread_ts') or event['ts']
     print(f'User said `{message}`.')
     say(f'Question: {message}')
     
@@ -185,7 +187,7 @@ def handle_gennyai_command(ack, body, say):
         embeddings = get_document_embeddings()
         prompt_with_articles_as_context = construct_prompt(message, embeddings, df)
         reply_text = get_completion(prompt_with_articles_as_context + '. Respond in 40 words or less')
-        say(reply_text)
+        say(reply_text, thread_ts=thread_ts)
     except Exception as e:
         print(f'Error getting result {e}')
 
@@ -265,9 +267,9 @@ def handle_new_train_article_submission(ack, body):
     else:
         send_message_to_user(
             body['user']['id'],
-            'Something went wrong when adding new training data!',
+            f'Info: FAQ for {title}, {heading} already exists! Delete it first if you want to overwrite.',
         )
-        print('Something went wrong when adding new training data!')
+        print(f'Info: FAQ for {title}, {heading} already exists! Delete it first if you want to overwrite.')
     
 
 @app.action('delete_article_btn')
